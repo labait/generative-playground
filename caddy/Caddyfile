@@ -1,0 +1,15 @@
+# Replace :80 with your domain (e.g. ai.laba.edu) and add TLS when ready.
+:80 {
+  handle /api/* {
+    reverse_proxy backend:3001
+  }
+  handle /auth/* {
+    reverse_proxy backend:3001
+  }
+  handle /media/* {
+    reverse_proxy backend:3001
+  }
+  handle {
+    reverse_proxy frontend:80
+  }
+}

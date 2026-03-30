@@ -1,0 +1,61 @@
+version: "3.9"
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: laba
+      POSTGRES_PASSWORD: laba
+      POSTGRES_DB: laba
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=postgres://laba:laba@postgres:5432/laba
+      - IMAGES_DIR=/data/images
+      - REPLICATE_API_TOKEN=${REPLICATE_API_TOKEN}
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - FRONTEND_URL=${FRONTEND_URL:-https://ai.laba.edu}
+    volumes:
+      - backend_data:/data
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_URL=${VITE_API_URL:-https://ai.laba.edu}
+        - VITE_AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+        - VITE_AZURE_TENANT_ID=${AZURE_TENANT_ID}
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
+  pg_data:
+  backend_data:
