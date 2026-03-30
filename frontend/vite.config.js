@@ -1,10 +1,10 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import vue from "@vitejs/plugin-vue";
 
 const api = process.env.VITE_DEV_PROXY || "http://127.0.0.1:3001";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [vue()],
   server: {
     port: 5174,
     proxy: {

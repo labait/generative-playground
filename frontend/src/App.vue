@@ -1,0 +1,143 @@
+<script setup>
+import { ref } from "vue"
+import { useAuth } from "./composables/useAuth.js"
+import { useGenerate } from "./composables/useGenerate.js"
+import { useQuota } from "./composables/useQuota.js"
+import PromptBox from "./components/PromptBox.vue"
+import Gallery from "./components/Gallery.vue"
+import QuotaBar from "./components/QuotaBar.vue"
+import ImageModal from "./components/ImageModal.vue"
+import AdminPanel from "./components/AdminPanel.vue"
+
+const { user, loading, login, logout } = useAuth()
+const { quota, loading: quotaLoading, refresh: refreshQuota } = useQuota(() => !!user.value)
+const { jobs, generateImage, upscaleJob, deleteJob } = useGenerate(refreshQuota)
+
+const busy = ref(false)
+const modalJob = ref(null)
+const adminOpen = ref(false)
+const banner = ref(null)
+
+async function onGenerate(params) {
+  busy.value = true
+  banner.value = null
+  try {
+    await generateImage(params)
+  } catch (e) {
+    banner.value = e.message === "quota_exceeded" ? "Quota mensile superata." : "Generazione non riuscita."
+  } finally {
+    busy.value = false
+  }
+}
+
+async function onUpscale(jobId) {
+  busy.value = true
+  banner.value = null
+  try {
+    await upscaleJob(jobId)
+  } catch (e) {
+    banner.value = e.message === "quota_exceeded" ? "Quota mensile superata." : "Upscale non riuscito."
+  } finally {
+    busy.value = false
+  }
+}
+
+async function onVary(job) {
+  if (job.model === "upscale") return
+  const base = job.params || {}
+  const p = base.prompt || job.prompt
+  busy.value = true
+  banner.value = null
+  try {
+    await generateImage({
+      ...base,
+      prompt: `${p}, variante ${Date.now()}`,
+    })
+  } catch (e) {
+    banner.value = e.message === "quota_exceeded" ? "Quota mensile superata." : "Variazione non riuscita."
+  } finally {
+    busy.value = false
+  }
+}
+</script>
+
+<template>
+  <!-- Loading state -->
+  <div v-if="loading" class="flex min-h-screen items-center justify-center text-zinc-500">
+    Caricamento…
+  </div>
+
+  <!-- Login screen -->
+  <div v-else-if="!user" class="flex min-h-screen flex-col items-center justify-center gap-6 px-4">
+    <div class="text-center">
+      <h1 class="font-display text-4xl font-bold tracking-tight text-white md:text-5xl">
+        LABA AI Studio
+      </h1>
+      <p class="mt-3 max-w-md text-sm text-zinc-400">
+        Generazione immagini per studenti LABA. Accedi con il tuo account Microsoft istituzionale.
+      </p>
+    </div>
+    <button
+      type="button"
+      @click="login"
+      class="rounded-xl bg-laba-accent px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-900/40 hover:brightness-110"
+    >
+      Accedi con Microsoft
+    </button>
+  </div>
+
+  <!-- Main app -->
+  <div v-else class="min-h-screen">
+    <header class="sticky top-0 z-30 border-b border-laba-border bg-laba-bg/90 backdrop-blur">
+      <div class="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 class="font-display text-xl font-bold text-white">LABA AI Studio</h1>
+          <p class="text-xs text-zinc-400">
+            {{ user.displayName || user.email }} · {{ user.role }}
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <QuotaBar :quota="quota" :loading="quotaLoading" />
+          <button
+            v-if="user.role === 'admin'"
+            type="button"
+            @click="adminOpen = true"
+            class="rounded-lg border border-laba-border px-3 py-2 text-xs text-zinc-300 hover:bg-laba-surface"
+          >
+            Admin
+          </button>
+          <button
+            type="button"
+            @click="logout"
+            class="rounded-lg border border-laba-border px-3 py-2 text-xs text-zinc-400 hover:text-white"
+          >
+            Esci
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl space-y-8 px-4 py-8">
+      <div
+        v-if="banner"
+        class="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+      >
+        {{ banner }}
+      </div>
+      <PromptBox :busy="busy" @generate="onGenerate" />
+      <section>
+        <h2 class="mb-4 font-display text-lg font-semibold text-white">Galleria</h2>
+        <Gallery
+          :jobs="jobs"
+          @upscale="onUpscale"
+          @vary="onVary"
+          @open="modalJob = $event"
+          @delete="deleteJob"
+        />
+      </section>
+    </main>
+
+    <ImageModal :job="modalJob" @close="modalJob = null" />
+    <AdminPanel :open="adminOpen" @close="adminOpen = false" />
+  </div>
+</template>

@@ -1,24 +1,20 @@
-import { useCallback, useEffect, useState } from "react";
+import { ref } from "vue";
 import { apiFetch, readJson } from "../lib/api.js";
 
 export function useAuth() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const user = ref(null);
+  const loading = ref(true);
 
-  const refresh = useCallback(async () => {
+  async function refresh() {
     const res = await apiFetch("/auth/me");
     const data = await readJson(res);
     if (res.ok && data?.user) {
-      setUser(data.user);
+      user.value = data.user;
     } else {
-      setUser(null);
+      user.value = null;
     }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+    loading.value = false;
+  }
 
   const login = () => {
     window.location.href = "/auth/login";
@@ -27,6 +23,8 @@ export function useAuth() {
   const logout = () => {
     window.location.href = "/auth/logout";
   };
+
+  refresh();
 
   return { user, loading, refresh, login, logout };
 }
