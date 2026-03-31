@@ -15,7 +15,7 @@ const emit = defineEmits(["upscale", "vary", "regenerate", "open", "delete"])
   >
     Nessuna immagine ancora. Scrivi un prompt e premi Genera.
   </div>
-  <div v-else class="columns-1 gap-4 sm:columns-2 lg:columns-3">
+  <div v-else style="column-width: 400px; column-gap: 1rem;">
     <ImageCard
       v-for="job in jobs"
       :key="job.jobId"

@@ -35,7 +35,7 @@ const STYLES = [
   { value: "illustration", label: "Illustrazione", desc: "Digitale", color: "from-pink-600 to-rose-700" },
   { value: "watercolor", label: "Acquerello", desc: "Pittura ad acqua", color: "from-teal-600 to-emerald-700" },
   { value: "oil-painting", label: "Olio", desc: "Pittura a olio", color: "from-yellow-700 to-amber-800" },
-  { value: "anime", label: "Anime", desc: "Stile giapponese", color: "from-fuchsia-600 to-purple-700" },
+  { value: "anime", label: "Anime", desc: "Stile giapponese", color: "from-orange-500 to-amber-600" },
   { value: "3d-render", label: "3D", desc: "Render 3D", color: "from-indigo-600 to-blue-700" },
   { value: "pixel-art", label: "Pixel", desc: "Retro 8-bit", color: "from-green-600 to-lime-700" },
   { value: "sketch", label: "Schizzo", desc: "Matita su carta", color: "from-stone-500 to-stone-600" },
@@ -59,7 +59,7 @@ const STYLES = [
           :class="[
             'flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition',
             aspectRatio === r.value
-              ? 'bg-laba-accent text-white shadow-md shadow-violet-900/30'
+              ? 'bg-laba-accent text-white shadow-md shadow-orange-900/30'
               : 'border border-laba-border bg-laba-bg/80 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200',
           ]"
         >

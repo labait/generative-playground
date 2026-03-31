@@ -23,7 +23,7 @@ const emit = defineEmits(["change"])
       <span
         :class="[
           'ml-1.5 text-[10px] font-normal',
-          mode === 'relax' ? 'text-violet-200' : 'text-zinc-600',
+          mode === 'relax' ? 'text-orange-200' : 'text-zinc-600',
         ]"
         >Schnell</span
       >
@@ -43,7 +43,7 @@ const emit = defineEmits(["change"])
       <span
         :class="[
           'ml-1.5 text-[10px] font-normal',
-          mode === 'fast' ? 'text-violet-200' : 'text-zinc-600',
+          mode === 'fast' ? 'text-orange-200' : 'text-zinc-600',
         ]"
         >Dev</span
       >

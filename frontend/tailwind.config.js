@@ -4,16 +4,16 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["DM Sans", "system-ui", "sans-serif"],
-        display: ["Syne", "system-ui", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        display: ["Inter", "system-ui", "sans-serif"],
       },
       colors: {
         laba: {
           bg: "#0c0c14",
           surface: "#161622",
-          border: "#32324a",
-          accent: "#7c3aed",
-          muted: "#8b8b9e",
+          border: "#2d2218",
+          accent: "#ff7230",
+          muted: "#9e8b7b",
         },
       },
     },

@@ -11,7 +11,7 @@ import AdminPanel from "./components/AdminPanel.vue"
 
 const { user, loading, login, logout } = useAuth()
 const { quota, loading: quotaLoading, refresh: refreshQuota } = useQuota(() => !!user.value)
-const { jobs, generateImage, upscaleJob, deleteJob } = useGenerate(refreshQuota)
+const { jobs, generateImage, upscaleJob, editImage, deleteJob } = useGenerate(refreshQuota)
 
 const promptBoxRef = ref(null)
 const busy = ref(false)
@@ -31,6 +31,18 @@ async function onGenerate(params) {
   }
 }
 
+async function onEdit({ file, prompt, aspect_ratio }) {
+  busy.value = true
+  banner.value = null
+  try {
+    await editImage(file, prompt, aspect_ratio)
+  } catch (e) {
+    banner.value = e.message === "quota_exceeded" ? "Quota mensile superata." : e.message === "replicate_rate_limited" ? "Troppe richieste simultanee, riprova tra qualche secondo." : "Modifica non riuscita."
+  } finally {
+    busy.value = false
+  }
+}
+
 async function onUpscale(jobId) {
   busy.value = true
   banner.value = null
@@ -45,7 +57,7 @@ async function onUpscale(jobId) {
 }
 
 async function onVary(job) {
-  if (job.model === "upscale") return
+  if (job.model === "upscale" || job.model === "edit") return
   const base = job.params || {}
   const p = base.prompt || job.prompt
   busy.value = true
@@ -66,7 +78,7 @@ async function onVary(job) {
 }
 
 async function onRegenerate(job) {
-  if (job.model === "upscale") return
+  if (job.model === "upscale" || job.model === "edit") return
   const base = job.params || {}
   const p = base.prompt || job.prompt
   busy.value = true
@@ -86,7 +98,7 @@ async function onRegenerate(job) {
 }
 
 function onReuse(job) {
-  if (job.model === "upscale") return
+  if (job.model === "upscale" || job.model === "edit") return
   const base = job.params || {}
   promptBoxRef.value?.loadParams({
     prompt: base.prompt || job.prompt,
@@ -111,17 +123,15 @@ function onReuse(job) {
   <!-- Login screen -->
   <div v-else-if="!user" class="flex min-h-screen flex-col items-center justify-center gap-6 px-4">
     <div class="text-center">
-      <h1 class="font-display text-4xl font-bold tracking-tight text-white md:text-5xl">
-        LABA AI Studio
-      </h1>
-      <p class="mt-3 max-w-md text-sm text-zinc-400">
+      <img src="/laba-logo.svg" alt="LABA" class="mx-auto mb-4 h-12 w-auto" />
+      <p class="mt-1 max-w-md text-sm text-zinc-400">
         Generazione immagini per studenti LABA. Accedi con il tuo account Microsoft istituzionale.
       </p>
     </div>
     <button
       type="button"
       @click="login"
-      class="rounded-xl bg-laba-accent px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-900/40 hover:brightness-110"
+      class="rounded-xl bg-laba-accent px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-900/40 hover:brightness-110"
     >
       Accedi con Microsoft
     </button>
@@ -130,9 +140,9 @@ function onReuse(job) {
   <!-- Main app -->
   <div v-else class="min-h-screen">
     <header class="sticky top-0 z-30 border-b border-laba-border bg-laba-bg/90 backdrop-blur">
-      <div class="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div class="mx-auto flex max-w-full flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 class="font-display text-xl font-bold text-white">LABA AI Studio</h1>
+          <img src="/laba-logo.svg" alt="LABA" class="mb-0.5 h-7 w-auto" />
           <p class="text-xs text-zinc-400">
             {{ user.displayName || user.email }} · {{ user.role }}
           </p>
@@ -158,14 +168,14 @@ function onReuse(job) {
       </div>
     </header>
 
-    <main class="mx-auto max-w-6xl space-y-8 px-4 py-8">
+    <main class="mx-auto max-w-full space-y-8 px-4 py-8">
       <div
         v-if="banner"
         class="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200"
       >
         {{ banner }}
       </div>
-      <PromptBox ref="promptBoxRef" :busy="busy" @generate="onGenerate" />
+      <PromptBox ref="promptBoxRef" :busy="busy" @generate="onGenerate" @edit="onEdit" />
       <section>
         <h2 class="mb-4 font-display text-lg font-semibold text-white">Galleria</h2>
         <Gallery
