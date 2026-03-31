@@ -67,6 +67,9 @@ router.post(
       return res.json({ jobId, status: "pending" });
     } catch (e) {
       console.error(e);
+      if (e?.status === 429 || e?.response?.status === 429) {
+        return res.status(429).json({ error: "replicate_rate_limited" });
+      }
       return res.status(500).json({ error: "generate_failed" });
     }
   }
