@@ -68,6 +68,9 @@ export async function checkQuota(userId, modelType) {
   if (modelType === "upscale") {
     return usage.standard_used < cfg.standard_monthly;
   }
+  if (modelType === "edit") {
+    return usage.hires_used < cfg.hires_monthly;
+  }
   return false;
 }
 
@@ -79,7 +82,7 @@ export async function incrementQuota(userId, modelType, credits = 1) {
       `UPDATE quota_usage SET standard_used = standard_used + $1 WHERE user_id = $2 AND month = $3`,
       [credits, userId, month]
     );
-  } else if (modelType === "dev") {
+  } else if (modelType === "dev" || modelType === "edit") {
     await run(
       `UPDATE quota_usage SET hires_used = hires_used + $1 WHERE user_id = $2 AND month = $3`,
       [credits, userId, month]

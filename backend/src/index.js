@@ -21,6 +21,7 @@ import authMicrosoft from "./auth/microsoft.js";
 import generateRoutes from "./routes/generate.js";
 import jobsRoutes from "./routes/jobs.js";
 import upscaleRoutes from "./routes/upscale.js";
+import editRoutes from "./routes/edit.js";
 import quotaRoutes from "./routes/quota.js";
 import adminRoutes from "./routes/admin.js";
 
@@ -78,6 +79,7 @@ app.use("/auth", authMicrosoft);
 app.use("/api/generate", generateRoutes);
 app.use("/api/jobs", jobsRoutes);
 app.use("/api/upscale", upscaleRoutes);
+app.use("/api/edit", editRoutes);
 app.use("/api/quota", quotaRoutes);
 app.use("/api/admin", adminRoutes);
 

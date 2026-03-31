@@ -120,6 +120,33 @@ export function useGenerate(onQuotaRefresh) {
     pollJob(data.jobId);
   }
 
+  async function editImage(file, prompt, aspectRatio = "1:1") {
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("prompt", prompt);
+    formData.append("aspect_ratio", aspectRatio);
+    const res = await apiFetch("/api/edit", { method: "POST", body: formData });
+    const data = await readJson(res);
+    if (res.status === 429) {
+      const err = data?.error || "quota_exceeded";
+      throw new Error(err === "replicate_rate_limited" ? "replicate_rate_limited" : "quota_exceeded");
+    }
+    if (!res.ok) {
+      throw new Error(data?.error || "edit_failed");
+    }
+    const job = {
+      jobId: data.jobId,
+      status: "pending",
+      imageUrl: null,
+      prompt,
+      params: { aspect_ratio: aspectRatio },
+      model: "edit",
+      createdAt: new Date().toISOString(),
+    };
+    jobs.value = sortJobs([job, ...jobs.value]);
+    pollJob(data.jobId);
+  }
+
   async function deleteJob(jobId) {
     try {
       const res = await apiFetch(`/api/jobs/${encodeURIComponent(jobId)}`, { method: "DELETE" });
@@ -134,5 +161,5 @@ export function useGenerate(onQuotaRefresh) {
     timers.clear();
   });
 
-  return { jobs, generateImage, upscaleJob, deleteJob };
+  return { jobs, generateImage, upscaleJob, editImage, deleteJob };
 }

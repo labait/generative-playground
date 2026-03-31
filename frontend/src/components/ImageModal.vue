@@ -28,6 +28,7 @@ const ratio = computed(() => params.value.aspect_ratio || "—")
 const guidance = computed(() => params.value.guidance ?? "—")
 const negPrompt = computed(() => params.value.negative_prompt || null)
 const isUpscale = computed(() => props.job?.model === "upscale")
+const isEdit = computed(() => props.job?.model === "edit")
 
 function copySeed(e) {
   e.stopPropagation()
@@ -69,7 +70,7 @@ onUnmounted(() => window.removeEventListener("keydown", onKeydown))
   >
     <!-- Modal container -->
     <div
-      class="flex max-h-[calc(100vh-2rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-900 shadow-2xl sm:max-h-[calc(100vh-4rem)] sm:flex-row"
+      class="flex max-h-[calc(100vh-2rem)] w-full max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-900 shadow-2xl sm:max-h-[calc(100vh-4rem)] sm:flex-row"
       @click.stop
     >
       <!-- Image section -->
@@ -77,7 +78,7 @@ onUnmounted(() => window.removeEventListener("keydown", onKeydown))
         <img
           :src="job.imageUrl"
           :alt="job.prompt"
-          class="max-h-[50vh] w-full object-contain sm:max-h-[calc(100vh-6rem)]"
+          class="h-full w-full object-contain sm:max-h-[calc(100vh-4rem)]"
         />
       </div>
 
@@ -111,7 +112,7 @@ onUnmounted(() => window.removeEventListener("keydown", onKeydown))
             <div class="rounded-lg bg-white/5 px-3 py-2">
               <span class="block text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Modello</span>
               <span class="text-xs font-medium text-zinc-200">
-                {{ job.model === "schnell" ? "Schnell" : job.model === "dev" ? "Dev" : "Upscale" }}
+                {{ job.model === "schnell" ? "Schnell" : job.model === "dev" ? "Dev" : job.model === "edit" ? "Modifica" : "Upscale" }}
               </span>
             </div>
             <div class="rounded-lg bg-white/5 px-3 py-2">
@@ -149,11 +150,11 @@ onUnmounted(() => window.removeEventListener("keydown", onKeydown))
         <div class="border-t border-white/10 p-4 sm:p-5">
           <div class="flex flex-col gap-2">
             <!-- Primary actions -->
-            <div v-if="!isUpscale" class="flex gap-2">
+            <div v-if="!isUpscale && !isEdit" class="flex gap-2">
               <button
                 type="button"
                 @click="emit('regenerate', job)"
-                class="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-laba-accent px-3 py-2.5 text-xs font-semibold text-white shadow-md shadow-violet-900/30 transition hover:brightness-110"
+                class="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-laba-accent px-3 py-2.5 text-xs font-semibold text-white shadow-md shadow-orange-900/30 transition hover:brightness-110"
                 title="Rigenera l'immagine con gli stessi identici parametri e seed"
               >
                 <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -177,7 +178,7 @@ onUnmounted(() => window.removeEventListener("keydown", onKeydown))
             <!-- Secondary actions -->
             <div class="flex gap-2">
               <button
-                v-if="!isUpscale"
+                v-if="!isUpscale && !isEdit"
                 type="button"
                 @click="emit('reuse', job)"
                 class="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-laba-border bg-white/5 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:bg-white/10"

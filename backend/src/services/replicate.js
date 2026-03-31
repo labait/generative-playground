@@ -12,6 +12,7 @@ export const MODELS = {
   schnell: "black-forest-labs/flux-schnell",
   dev: "black-forest-labs/flux-dev",
   upscale: "nightmareai/real-esrgan:350d32041630ffbe63c8352783a26d94126809164e684b54e23b5c3d4aa7b4b0",
+  edit: "black-forest-labs/flux-kontext-dev",
 };
 
 const STYLE_PREFIXES = {
@@ -85,6 +86,19 @@ export async function createUpscalePrediction(imageUrl) {
       image: imageUrl,
       scale: 2,
       face_enhance: false,
+    },
+  });
+}
+
+export async function createEditPrediction(imageBlob, prompt, aspectRatio = "1:1") {
+  return replicate().predictions.create({
+    model: MODELS.edit,
+    input: {
+      prompt,
+      input_image: imageBlob,
+      aspect_ratio: aspectRatio,
+      output_format: "webp",
+      output_quality: 90,
     },
   });
 }

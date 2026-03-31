@@ -10,14 +10,14 @@ export function quotaCheck(modelResolver) {
       return res.status(401).json({ error: "unauthorized" });
     }
     const modelType = modelResolver(req);
-    if (!modelType || !["schnell", "dev", "upscale"].includes(modelType)) {
+    if (!modelType || !["schnell", "dev", "upscale", "edit"].includes(modelType)) {
       return res.status(400).json({ error: "invalid_model" });
     }
     const ok = await checkQuota(userId, modelType);
     if (!ok) {
       return res.status(429).json({
         error: "quota_exceeded",
-        type: modelType === "dev" ? "hires" : "standard",
+        type: (modelType === "dev" || modelType === "edit") ? "hires" : "standard",
       });
     }
     next();
