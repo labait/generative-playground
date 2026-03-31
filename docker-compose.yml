@@ -39,6 +39,7 @@ services:
       - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
       - SESSION_SECRET=${SESSION_SECRET}
       - FRONTEND_URL=${FRONTEND_URL:-https://ai.laba.edu}
+      - COOKIE_SECURE=${COOKIE_SECURE:-false}
     volumes:
       - backend_data:/data
     depends_on:
