@@ -1,17 +1,20 @@
 <script setup>
-import { computed } from "vue"
+import { computed, ref } from "vue"
 
 const props = defineProps({
   job: Object,
 })
 
-const emit = defineEmits(["upscale", "vary", "open", "delete"])
+const emit = defineEmits(["upscale", "vary", "regenerate", "open", "delete"])
 
 const busy = computed(() => props.job.status === "pending" || props.job.status === "processing")
+const feedback = ref(null)
 
 function copyPrompt(e) {
   e.stopPropagation()
   navigator.clipboard.writeText(props.job.prompt || "")
+  feedback.value = "copied"
+  setTimeout(() => { feedback.value = null }, 1500)
 }
 
 function download(e) {
@@ -21,6 +24,8 @@ function download(e) {
   a.href = props.job.imageUrl
   a.download = `laba-${props.job.jobId}.webp`
   a.click()
+  feedback.value = "downloaded"
+  setTimeout(() => { feedback.value = null }, 1500)
 }
 
 function confirmDelete(e) {
@@ -33,8 +38,8 @@ function confirmDelete(e) {
 
 <template>
   <div class="group relative overflow-hidden rounded-xl border border-laba-border bg-laba-surface">
-    <div class="aspect-square w-full overflow-hidden bg-zinc-900">
-      <div v-if="busy" class="flex h-full w-full flex-col items-center justify-center gap-3">
+    <div class="w-full overflow-hidden bg-zinc-900">
+      <div v-if="busy" class="flex h-64 w-full flex-col items-center justify-center gap-3">
         <div class="h-10 w-10 animate-spin rounded-full border-2 border-laba-accent border-t-transparent" />
         <div class="h-2 w-3/4 animate-shimmer rounded-full" />
         <p class="text-xs text-zinc-400">
@@ -43,7 +48,7 @@ function confirmDelete(e) {
       </div>
       <div
         v-else-if="job.status === 'failed'"
-        class="flex h-full items-center justify-center p-4 text-center text-sm text-red-300"
+        class="flex h-64 items-center justify-center p-4 text-center text-sm text-red-300"
       >
         {{ job.error || "Errore" }}
       </div>
@@ -51,12 +56,12 @@ function confirmDelete(e) {
         v-else-if="job.status === 'succeeded' && job.imageUrl"
         type="button"
         @click="emit('open', job)"
-        class="block h-full w-full"
+        class="block w-full"
       >
         <img
           :src="job.imageUrl"
           alt=""
-          class="h-full w-full object-cover transition group-hover:scale-[1.02]"
+          class="w-full object-cover transition group-hover:scale-[1.02]"
         />
       </button>
     </div>
@@ -72,17 +77,17 @@ function confirmDelete(e) {
         <div v-if="job.status === 'succeeded'" class="mt-2 flex flex-wrap gap-1.5">
           <button
             type="button"
-            @click="download"
+            @click.stop="download"
             class="pointer-events-auto rounded-md bg-white/15 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm hover:bg-white/25"
           >
-            Scarica
+            {{ feedback === "downloaded" ? "✓ Scaricato" : "Scarica" }}
           </button>
           <button
             type="button"
-            @click="copyPrompt"
+            @click.stop="copyPrompt"
             class="pointer-events-auto rounded-md bg-white/15 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm hover:bg-white/25"
           >
-            Copia prompt
+            {{ feedback === "copied" ? "✓ Copiato" : "Copia prompt" }}
           </button>
           <button
             type="button"
@@ -90,6 +95,15 @@ function confirmDelete(e) {
             class="pointer-events-auto rounded-md bg-white/15 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm hover:bg-white/25"
           >
             Upscale
+          </button>
+          <button
+            v-if="job.model !== 'upscale'"
+            type="button"
+            @click.stop="emit('regenerate', job)"
+            class="pointer-events-auto rounded-md bg-laba-accent/70 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm hover:bg-laba-accent"
+            title="Rigenera identica"
+          >
+            Rigenera
           </button>
           <button
             v-if="job.model !== 'upscale'"
@@ -126,12 +140,18 @@ function confirmDelete(e) {
       </button>
     </div>
 
-    <!-- Model badge -->
-    <div
-      v-if="job.model && job.status === 'succeeded'"
-      class="absolute left-2 top-2 rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-medium text-zinc-300 backdrop-blur-sm"
-    >
-      {{ job.model === "schnell" ? "Schnell" : job.model === "dev" ? "Dev" : "Upscale" }}
+    <!-- Model + seed badges -->
+    <div v-if="job.model && job.status === 'succeeded'" class="absolute left-2 top-2 flex gap-1">
+      <div class="rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-medium text-zinc-300 backdrop-blur-sm">
+        {{ job.model === "schnell" ? "Schnell" : job.model === "dev" ? "Dev" : "Upscale" }}
+      </div>
+      <div
+        v-if="job.params?.seed != null"
+        class="rounded-md bg-black/60 px-2 py-0.5 font-mono text-[10px] text-zinc-400 backdrop-blur-sm"
+        :title="`Seed: ${job.params.seed}`"
+      >
+        #{{ job.params.seed }}
+      </div>
     </div>
   </div>
 </template>

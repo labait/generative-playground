@@ -2,6 +2,10 @@ import { ref, onUnmounted } from "vue";
 import { apiFetch, readJson } from "../lib/api.js";
 
 const POLL_MS = 2000;
+
+function sortJobs(list) {
+  return [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+}
 const TIMEOUT_MS = 300000;
 
 export function useGenerate(onQuotaRefresh) {
@@ -19,7 +23,7 @@ export function useGenerate(onQuotaRefresh) {
         if (res.ok && data.jobs) {
           const existingIds = new Set(jobs.value.map((j) => j.jobId));
           const past = data.jobs.filter((j) => !existingIds.has(j.jobId));
-          jobs.value = [...jobs.value, ...past];
+          jobs.value = sortJobs([...jobs.value, ...past]);
         }
       } catch {}
     })();
@@ -71,7 +75,8 @@ export function useGenerate(onQuotaRefresh) {
     });
     const data = await readJson(res);
     if (res.status === 429) {
-      throw new Error("quota_exceeded");
+      const err = data?.error || "quota_exceeded";
+      throw new Error(err === "replicate_rate_limited" ? "replicate_rate_limited" : "quota_exceeded");
     }
     if (!res.ok) {
       throw new Error(data?.error || "generate_failed");
@@ -83,8 +88,9 @@ export function useGenerate(onQuotaRefresh) {
       prompt: params.prompt,
       params,
       model: params.model,
+      createdAt: new Date().toISOString(),
     };
-    jobs.value = [job, ...jobs.value];
+    jobs.value = sortJobs([job, ...jobs.value]);
     pollJob(data.jobId);
   }
 
@@ -95,7 +101,8 @@ export function useGenerate(onQuotaRefresh) {
     });
     const data = await readJson(res);
     if (res.status === 429) {
-      throw new Error("quota_exceeded");
+      const err = data?.error || "quota_exceeded";
+      throw new Error(err === "replicate_rate_limited" ? "replicate_rate_limited" : "quota_exceeded");
     }
     if (!res.ok) {
       throw new Error(data?.error || "upscale_failed");
@@ -107,8 +114,9 @@ export function useGenerate(onQuotaRefresh) {
       prompt: `Upscale: ${sourceJobId}`,
       params: { sourceJobId },
       model: "upscale",
+      createdAt: new Date().toISOString(),
     };
-    jobs.value = [job, ...jobs.value];
+    jobs.value = sortJobs([job, ...jobs.value]);
     pollJob(data.jobId);
   }
 
