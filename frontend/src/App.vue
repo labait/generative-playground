@@ -13,6 +13,7 @@ const { user, loading, login, logout } = useAuth()
 const { quota, loading: quotaLoading, refresh: refreshQuota } = useQuota(() => !!user.value)
 const { jobs, generateImage, upscaleJob, deleteJob } = useGenerate(refreshQuota)
 
+const promptBoxRef = ref(null)
 const busy = ref(false)
 const modalJob = ref(null)
 const adminOpen = ref(false)
@@ -24,7 +25,7 @@ async function onGenerate(params) {
   try {
     await generateImage(params)
   } catch (e) {
-    banner.value = e.message === "quota_exceeded" ? "Quota mensile superata." : "Generazione non riuscita."
+    banner.value = e.message === "quota_exceeded" ? "Quota mensile superata." : e.message === "replicate_rate_limited" ? "Troppe richieste simultanee, riprova tra qualche secondo." : "Generazione non riuscita."
   } finally {
     busy.value = false
   }
@@ -33,10 +34,11 @@ async function onGenerate(params) {
 async function onUpscale(jobId) {
   busy.value = true
   banner.value = null
+  modalJob.value = null
   try {
     await upscaleJob(jobId)
   } catch (e) {
-    banner.value = e.message === "quota_exceeded" ? "Quota mensile superata." : "Upscale non riuscito."
+    banner.value = e.message === "quota_exceeded" ? "Quota mensile superata." : e.message === "replicate_rate_limited" ? "Troppe richieste simultanee, riprova tra qualche secondo." : "Upscale non riuscito."
   } finally {
     busy.value = false
   }
@@ -48,16 +50,55 @@ async function onVary(job) {
   const p = base.prompt || job.prompt
   busy.value = true
   banner.value = null
+  modalJob.value = null
   try {
     await generateImage({
       ...base,
       prompt: `${p}, variante ${Date.now()}`,
+      model: job.model,
+      seed: null,
     })
   } catch (e) {
-    banner.value = e.message === "quota_exceeded" ? "Quota mensile superata." : "Variazione non riuscita."
+    banner.value = e.message === "quota_exceeded" ? "Quota mensile superata." : e.message === "replicate_rate_limited" ? "Troppe richieste simultanee, riprova tra qualche secondo." : "Variazione non riuscita."
   } finally {
     busy.value = false
   }
+}
+
+async function onRegenerate(job) {
+  if (job.model === "upscale") return
+  const base = job.params || {}
+  const p = base.prompt || job.prompt
+  busy.value = true
+  banner.value = null
+  modalJob.value = null
+  try {
+    await generateImage({
+      ...base,
+      prompt: p,
+      model: job.model,
+    })
+  } catch (e) {
+    banner.value = e.message === "quota_exceeded" ? "Quota mensile superata." : e.message === "replicate_rate_limited" ? "Troppe richieste simultanee, riprova tra qualche secondo." : "Rigenerazione non riuscita."
+  } finally {
+    busy.value = false
+  }
+}
+
+function onReuse(job) {
+  if (job.model === "upscale") return
+  const base = job.params || {}
+  promptBoxRef.value?.loadParams({
+    prompt: base.prompt || job.prompt,
+    negative_prompt: base.negative_prompt || "",
+    aspect_ratio: base.aspect_ratio,
+    style: base.style,
+    guidance: base.guidance,
+    seed: base.seed,
+    model: job.model,
+  })
+  modalJob.value = null
+  window.scrollTo({ top: 0, behavior: "smooth" })
 }
 </script>
 
@@ -124,20 +165,28 @@ async function onVary(job) {
       >
         {{ banner }}
       </div>
-      <PromptBox :busy="busy" @generate="onGenerate" />
+      <PromptBox ref="promptBoxRef" :busy="busy" @generate="onGenerate" />
       <section>
         <h2 class="mb-4 font-display text-lg font-semibold text-white">Galleria</h2>
         <Gallery
           :jobs="jobs"
           @upscale="onUpscale"
           @vary="onVary"
+          @regenerate="onRegenerate"
           @open="modalJob = $event"
           @delete="deleteJob"
         />
       </section>
     </main>
 
-    <ImageModal :job="modalJob" @close="modalJob = null" />
+    <ImageModal
+      :job="modalJob"
+      @close="modalJob = null"
+      @regenerate="onRegenerate"
+      @vary="onVary"
+      @reuse="onReuse"
+      @upscale="onUpscale"
+    />
     <AdminPanel :open="adminOpen" @close="adminOpen = false" />
   </div>
 </template>

@@ -31,6 +31,23 @@ function submit() {
   })
 }
 
+function loadParams(params) {
+  if (params.prompt != null) prompt.value = params.prompt
+  if (params.negative_prompt != null) negativePrompt.value = params.negative_prompt
+  if (params.aspect_ratio) aspectRatio.value = params.aspect_ratio
+  if (params.style) stylePreset.value = params.style
+  if (params.guidance != null) guidance.value = params.guidance
+  if (params.seed !== undefined) seed.value = params.seed
+  if (params.model) {
+    mode.value = params.model === "dev" ? "fast" : "relax"
+  }
+  if (params.negative_prompt || params.seed != null || params.guidance != null) {
+    showAdvanced.value = true
+  }
+}
+
+defineExpose({ loadParams })
+
 function onKeyDown(e) {
   if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
     e.preventDefault()
