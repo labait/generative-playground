@@ -42,8 +42,8 @@ jobs:
             VITE_API_URL=${FRONTEND_URL}
             EOF
 
-            # Build and restart
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+            # Build and restart (force-recreate caddy to pick up Caddyfile changes)
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d --force-recreate caddy
 
             # Run DB migrations if schema changed
             docker compose exec -T backend node -e "
