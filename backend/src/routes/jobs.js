@@ -74,6 +74,21 @@ router.get("/:jobId", requireAuth, async (req, res) => {
         return res.status(500).json({ error: "image_store_failed" });
       }
 
+      // Capture the actual seed used by Replicate (important for reproducibility)
+      const usedSeed = prediction.input?.seed ?? null;
+      if (usedSeed != null && row.params) {
+        try {
+          const storedParams = JSON.parse(row.params);
+          if (storedParams.seed == null) {
+            storedParams.seed = usedSeed;
+            await run(
+              `UPDATE usage_log SET params = $1 WHERE id = $2`,
+              [JSON.stringify(storedParams), row.id]
+            );
+          }
+        } catch {}
+      }
+
       const mediaToken = crypto.randomBytes(24).toString("hex");
       const upd = await run(
         `UPDATE usage_log SET status = 'succeeded', image_url = $1, local_path = $2, media_access_token = $3, completed_at = NOW()
