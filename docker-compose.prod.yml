@@ -7,4 +7,5 @@ services:
       - ./caddy/Caddyfile.prod:/etc/caddy/Caddyfile
 
   postgres:
-    ports: []
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-laba}

@@ -20,8 +20,6 @@ services:
       POSTGRES_USER: laba
       POSTGRES_PASSWORD: laba
       POSTGRES_DB: laba
-    ports:
-      - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -31,7 +29,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - DATABASE_URL=postgres://laba:laba@postgres:5432/laba
+      - DATABASE_URL=postgres://laba:${POSTGRES_PASSWORD:-laba}@postgres:5432/laba
       - IMAGES_DIR=/data/images
       - REPLICATE_API_TOKEN=${REPLICATE_API_TOKEN}
       - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
