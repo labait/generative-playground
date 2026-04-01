@@ -9,7 +9,10 @@ const props = defineProps({
 
 const emit = defineEmits(["generate", "edit"])
 
-// Generate tab state
+// Tab
+const activeTab = ref("generate")
+
+// Generate state
 const prompt = ref("")
 const negativePrompt = ref("")
 const mode = ref("relax")
@@ -19,19 +22,17 @@ const guidance = ref(3.5)
 const seed = ref(null)
 const showAdvanced = ref(false)
 
-// Tab
-const activeTab = ref("generate")
-
-// Edit tab state
+// Edit state
 const editFile = ref(null)
 const editPreviewUrl = ref(null)
 const editPrompt = ref("")
 const editAspectRatio = ref("1:1")
 const fileInput = ref(null)
+const isDraggingOver = ref(false)
 
 const editReady = computed(() => editFile.value && editPrompt.value.trim())
 
-function submit() {
+function submitGenerate() {
   const model = mode.value === "fast" ? "dev" : "schnell"
   emit("generate", {
     prompt: prompt.value,
@@ -44,55 +45,6 @@ function submit() {
   })
 }
 
-function loadParams(params) {
-  if (params.prompt != null) prompt.value = params.prompt
-  if (params.negative_prompt != null) negativePrompt.value = params.negative_prompt
-  if (params.aspect_ratio) aspectRatio.value = params.aspect_ratio
-  if (params.style) stylePreset.value = params.style
-  if (params.guidance != null) guidance.value = params.guidance
-  if (params.seed !== undefined) seed.value = params.seed
-  if (params.model) {
-    mode.value = params.model === "dev" ? "fast" : "relax"
-  }
-  if (params.negative_prompt || params.seed != null || params.guidance != null) {
-    showAdvanced.value = true
-  }
-}
-
-defineExpose({ loadParams })
-
-function onKeyDown(e) {
-  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-    e.preventDefault()
-    if (!props.busy && prompt.value.trim()) submit()
-  }
-}
-
-function setEditFile(file) {
-  if (!file || !file.type.startsWith("image/")) return
-  editFile.value = file
-  if (editPreviewUrl.value) URL.revokeObjectURL(editPreviewUrl.value)
-  editPreviewUrl.value = URL.createObjectURL(file)
-}
-
-function onFileChange(e) {
-  setEditFile(e.target.files?.[0])
-}
-
-function onDrop(e) {
-  e.preventDefault()
-  setEditFile(e.dataTransfer.files?.[0])
-}
-
-function clearEditFile() {
-  editFile.value = null
-  if (editPreviewUrl.value) {
-    URL.revokeObjectURL(editPreviewUrl.value)
-    editPreviewUrl.value = null
-  }
-  if (fileInput.value) fileInput.value.value = ""
-}
-
 function submitEdit() {
   if (!editReady.value || props.busy) return
   emit("edit", {
@@ -101,20 +53,83 @@ function submitEdit() {
     aspect_ratio: editAspectRatio.value,
   })
 }
+
+function loadParams(params) {
+  if (params.prompt != null) prompt.value = params.prompt
+  if (params.negative_prompt != null) negativePrompt.value = params.negative_prompt
+  if (params.aspect_ratio) aspectRatio.value = params.aspect_ratio
+  if (params.style) stylePreset.value = params.style
+  if (params.guidance != null) guidance.value = params.guidance
+  if (params.seed !== undefined) seed.value = params.seed
+  if (params.model) mode.value = params.model === "dev" ? "fast" : "relax"
+  if (params.negative_prompt || params.seed != null || params.guidance != null) showAdvanced.value = true
+}
+
+defineExpose({ loadParams })
+
+function onKeyDown(e) {
+  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+    e.preventDefault()
+    if (activeTab.value === "generate" && !props.busy && prompt.value.trim()) submitGenerate()
+    else if (activeTab.value === "edit") submitEdit()
+  }
+}
+
+function setFile(file) {
+  if (!file || !file.type.startsWith("image/")) return
+  editFile.value = file
+  if (editPreviewUrl.value) URL.revokeObjectURL(editPreviewUrl.value)
+  editPreviewUrl.value = URL.createObjectURL(file)
+}
+
+function clearFile() {
+  editFile.value = null
+  if (editPreviewUrl.value) {
+    URL.revokeObjectURL(editPreviewUrl.value)
+    editPreviewUrl.value = null
+  }
+  if (fileInput.value) fileInput.value.value = ""
+}
+
+function onDragOver(e) {
+  e.preventDefault()
+  isDraggingOver.value = true
+}
+
+function onDragLeave(e) {
+  if (!e.currentTarget.contains(e.relatedTarget)) isDraggingOver.value = false
+}
+
+function onDrop(e) {
+  e.preventDefault()
+  isDraggingOver.value = false
+  setFile(e.dataTransfer.files?.[0])
+}
+
+function onPaste(e) {
+  const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith("image/"))
+  if (item) setFile(item.getAsFile())
+}
+
+function onFileChange(e) {
+  setFile(e.target.files?.[0])
+}
 </script>
 
 <template>
-  <div class="rounded-2xl border border-laba-border bg-laba-surface/80 p-5 shadow-xl backdrop-blur sm:p-6">
+  <div class="rounded-2xl border border-laba-border bg-laba-surface/80 shadow-xl backdrop-blur">
 
     <!-- Tab bar -->
-    <div class="mb-5 flex gap-1 rounded-lg border border-laba-border bg-laba-bg p-1 w-fit">
+    <div class="flex border-b border-laba-border">
       <button
         type="button"
         @click="activeTab = 'generate'"
         :disabled="busy"
         :class="[
-          'rounded-md px-4 py-2 text-sm font-semibold transition',
-          activeTab === 'generate' ? 'bg-laba-accent text-white shadow' : 'text-zinc-400 hover:text-zinc-200',
+          'px-6 py-4 text-sm font-semibold transition border-b-2 -mb-px',
+          activeTab === 'generate'
+            ? 'border-laba-accent text-white'
+            : 'border-transparent text-zinc-400 hover:text-zinc-200',
         ]"
       >Genera</button>
       <button
@@ -122,14 +137,16 @@ function submitEdit() {
         @click="activeTab = 'edit'"
         :disabled="busy"
         :class="[
-          'rounded-md px-4 py-2 text-sm font-semibold transition',
-          activeTab === 'edit' ? 'bg-laba-accent text-white shadow' : 'text-zinc-400 hover:text-zinc-200',
+          'px-6 py-4 text-sm font-semibold transition border-b-2 -mb-px',
+          activeTab === 'edit'
+            ? 'border-laba-accent text-white'
+            : 'border-transparent text-zinc-400 hover:text-zinc-200',
         ]"
       >Modifica foto</button>
     </div>
 
     <!-- GENERATE TAB -->
-    <template v-if="activeTab === 'generate'">
+    <div v-if="activeTab === 'generate'" class="p-5 sm:p-6">
       <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 class="font-display text-lg font-bold text-white">Crea immagine</h2>
         <ModeToggle :mode="mode" @change="mode = $event" :disabled="busy" />
@@ -161,48 +178,52 @@ function submitEdit() {
 
       <div class="mt-5 flex items-center justify-between gap-3">
         <p class="hidden text-xs text-zinc-500 sm:block">
-          <kbd class="rounded border border-zinc-700 bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-400">
-            ⌘ Enter
-          </kbd>
+          <kbd class="rounded border border-zinc-700 bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-400">⌘ Enter</kbd>
           per generare
         </p>
         <button
           type="button"
           :disabled="busy || !prompt.trim()"
-          @click="submit"
+          @click="submitGenerate"
           class="ml-auto rounded-xl bg-laba-accent px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-900/40 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {{ busy ? "Generazione…" : "Genera" }}
         </button>
       </div>
-    </template>
+    </div>
 
     <!-- EDIT TAB -->
-    <template v-else>
+    <div
+      v-else
+      class="p-5 sm:p-6 transition-colors"
+      :class="isDraggingOver ? 'bg-laba-accent/5' : ''"
+      @dragover="onDragOver"
+      @dragleave="onDragLeave"
+      @drop="onDrop"
+    >
       <h2 class="mb-4 font-display text-lg font-bold text-white">Modifica immagine</h2>
 
-      <!-- Drop zone -->
+      <!-- Drop zone (no file yet) -->
       <div
         v-if="!editPreviewUrl"
-        class="mb-4 flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-laba-border bg-laba-bg text-zinc-500 transition hover:border-laba-accent hover:text-zinc-300"
-        @dragover.prevent
-        @drop="onDrop"
+        class="mb-4 flex h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed bg-laba-bg text-zinc-500 transition hover:text-zinc-300"
+        :class="isDraggingOver ? 'border-laba-accent text-zinc-300' : 'border-laba-border hover:border-zinc-500'"
         @click="fileInput.click()"
       >
-        <svg class="h-8 w-8 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <svg class="h-7 w-7 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
         </svg>
-        <span class="text-sm">Carica o trascina un'immagine</span>
-        <span class="text-xs">PNG, JPG, WEBP · max 10 MB</span>
+        <span class="text-sm font-medium">{{ isDraggingOver ? "Rilascia qui" : "Clicca o trascina un'immagine" }}</span>
+        <span class="text-xs">JPG, PNG, WEBP, GIF · max 10 MB</span>
       </div>
 
-      <!-- Preview -->
+      <!-- Preview (file attached) -->
       <div v-else class="relative mb-4">
-        <img :src="editPreviewUrl" alt="Anteprima" class="max-h-60 w-full rounded-xl object-contain bg-zinc-900" />
+        <img :src="editPreviewUrl" alt="Anteprima" class="max-h-56 w-full rounded-xl object-contain bg-zinc-900" />
         <button
           type="button"
-          @click="clearEditFile"
-          class="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white backdrop-blur-sm hover:bg-black/80"
+          @click="clearFile"
+          class="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white backdrop-blur-sm transition hover:bg-red-600"
           title="Rimuovi immagine"
         >
           <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -214,7 +235,7 @@ function submitEdit() {
       <input
         ref="fileInput"
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,image/gif,image/avif,image/tiff"
         class="hidden"
         @change="onFileChange"
       />
@@ -222,6 +243,10 @@ function submitEdit() {
       <!-- Edit instruction -->
       <textarea
         v-model="editPrompt"
+        @keydown="onKeyDown"
+        @paste="onPaste"
+        @dragover.prevent
+        @drop="onDrop"
         placeholder="Descrivi come modificare l'immagine… (es. rendi il cielo rosa al tramonto)"
         rows="3"
         class="mb-4 w-full resize-none rounded-xl border border-laba-border bg-laba-bg px-4 py-3 text-sm leading-relaxed text-zinc-100 placeholder:text-zinc-500 focus:border-laba-accent focus:outline-none focus:ring-1 focus:ring-laba-accent"
@@ -239,24 +264,28 @@ function submitEdit() {
             :class="[
               'rounded-lg px-3 py-2 text-xs font-medium transition',
               editAspectRatio === r
-                ? 'bg-laba-accent text-white shadow-md shadow-violet-900/30'
+                ? 'bg-laba-accent text-white shadow-md shadow-orange-900/30'
                 : 'border border-laba-border bg-laba-bg/80 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200',
             ]"
           >{{ r }}</button>
         </div>
       </div>
 
-      <div class="flex justify-end">
+      <div class="flex items-center justify-between gap-3">
+        <p class="hidden text-xs text-zinc-500 sm:block">
+          <kbd class="rounded border border-zinc-700 bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-400">⌘ Enter</kbd>
+          per modificare
+        </p>
         <button
           type="button"
           :disabled="busy || !editReady"
           @click="submitEdit"
-          class="rounded-xl bg-laba-accent px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-900/40 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+          class="ml-auto rounded-xl bg-laba-accent px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-900/40 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {{ busy ? "Modifica in corso…" : "Modifica" }}
         </button>
       </div>
-    </template>
+    </div>
 
   </div>
 </template>

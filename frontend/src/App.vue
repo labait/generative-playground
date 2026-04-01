@@ -175,7 +175,9 @@ function onReuse(job) {
       >
         {{ banner }}
       </div>
-      <PromptBox ref="promptBoxRef" :busy="busy" @generate="onGenerate" @edit="onEdit" />
+      <div class="mx-auto max-w-[1280px]">
+        <PromptBox ref="promptBoxRef" :busy="busy" @generate="onGenerate" @edit="onEdit" />
+      </div>
       <section>
         <h2 class="mb-4 font-display text-lg font-semibold text-white">Galleria</h2>
         <Gallery

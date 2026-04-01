@@ -97,7 +97,7 @@ function confirmDelete(e) {
             Upscale
           </button>
           <button
-            v-if="job.model !== 'upscale'"
+            v-if="job.model !== 'upscale' && job.model !== 'edit'"
             type="button"
             @click.stop="emit('regenerate', job)"
             class="pointer-events-auto rounded-md bg-laba-accent/70 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm hover:bg-laba-accent"
@@ -106,7 +106,7 @@ function confirmDelete(e) {
             Rigenera
           </button>
           <button
-            v-if="job.model !== 'upscale'"
+            v-if="job.model !== 'upscale' && job.model !== 'edit'"
             type="button"
             @click.stop="emit('vary', job)"
             class="pointer-events-auto rounded-md bg-white/15 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm hover:bg-white/25"
@@ -143,7 +143,7 @@ function confirmDelete(e) {
     <!-- Model + seed badges -->
     <div v-if="job.model && job.status === 'succeeded'" class="absolute left-2 top-2 flex gap-1">
       <div class="rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-medium text-zinc-300 backdrop-blur-sm">
-        {{ job.model === "schnell" ? "Schnell" : job.model === "dev" ? "Dev" : "Upscale" }}
+        {{ job.model === "schnell" ? "Schnell" : job.model === "dev" ? "Dev" : job.model === "edit" ? "Modifica" : "Upscale" }}
       </div>
       <div
         v-if="job.params?.seed != null"
