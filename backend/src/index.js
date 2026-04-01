@@ -126,6 +126,7 @@ app.get("/media/public/:token", publicMediaLimiter, async (req, res) => {
   if (!row?.local_path || !isSafePath(row.local_path) || !fs.existsSync(row.local_path)) {
     return res.status(404).end();
   }
+  res.set("Cache-Control", "private, no-store");
   return res.sendFile(path.resolve(row.local_path));
 });
 
