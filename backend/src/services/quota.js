@@ -1,8 +1,8 @@
 import { getOne, run } from "../db/client.js";
 
 const DEFAULT_QUOTA = {
-  standard_monthly: 200,
-  hires_monthly: 20,
+  standard_monthly: 10,
+  hires_monthly: 2,
   reset_day: 1,
 };
 
