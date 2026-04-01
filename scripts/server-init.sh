@@ -43,7 +43,7 @@ sed -i 's/^#\?AllowAgentForwarding.*/AllowAgentForwarding no/' /etc/ssh/sshd_con
 sed -i 's/^#\?AllowTcpForwarding.*/AllowTcpForwarding no/' /etc/ssh/sshd_config
 echo "ClientAliveInterval 300" >> /etc/ssh/sshd_config
 echo "ClientAliveCountMax 2" >> /etc/ssh/sshd_config
-systemctl restart sshd
+systemctl restart ssh
 
 echo "==> Hardening kernel (sysctl)"
 cat > /etc/sysctl.d/99-hardening.conf <<'SYSCTL'
