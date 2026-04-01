@@ -3,7 +3,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { quotaCheck } from "../middleware/quota.js";
 import { generateRateLimit } from "../middleware/rateLimit.js";
 import { sanitizePrompt } from "../util/sanitize.js";
-import { buildFluxInput, createPrediction } from "../services/replicate.js";
+import { buildFluxInput, createPrediction, STYLE_PREFIXES } from "../services/replicate.js";
 import { run } from "../db/client.js";
 
 const router = Router();
@@ -30,6 +30,14 @@ router.post(
       }
       if (!model || !["schnell", "dev"].includes(model)) {
         return res.status(400).json({ error: "invalid_model" });
+      }
+      const validAspects = ["1:1", "16:9", "9:16", "21:9", "9:21", "4:3", "3:4", "4:5", "5:4", "3:2", "2:3"];
+      if (!validAspects.includes(aspect_ratio)) {
+        return res.status(400).json({ error: "invalid_aspect_ratio" });
+      }
+      const validStyles = Object.keys(STYLE_PREFIXES);
+      if (!validStyles.includes(style)) {
+        return res.status(400).json({ error: "invalid_style" });
       }
 
       const prompt = sanitizePrompt(rawPrompt);

@@ -1,8 +1,11 @@
 import { Router } from "express";
 import { ConfidentialClientApplication } from "@azure/msal-node";
 import { getOne, run } from "../db/client.js";
+import { authLimiter } from "../middleware/rateLimit.js";
 
 const router = Router();
+
+router.use(authLimiter);
 
 function getRedirectUri() {
   if (process.env.OAUTH_REDIRECT_URI) return process.env.OAUTH_REDIRECT_URI;

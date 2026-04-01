@@ -1,4 +1,11 @@
 node_modules
 data
 .env
+.env.*
 *.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.log
+.git
+.gitignore
+.DS_Store

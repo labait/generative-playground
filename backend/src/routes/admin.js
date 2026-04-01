@@ -26,13 +26,18 @@ router.get("/users", async (req, res) => {
 router.put("/users/:id/quota", async (req, res) => {
   const id = Number(req.params.id);
   const { standard_monthly, hires_monthly } = req.body || {};
-  if (!Number.isFinite(id) || standard_monthly == null || hires_monthly == null) {
+  const sm = Number(standard_monthly);
+  const hm = Number(hires_monthly);
+  if (!Number.isFinite(id) || !Number.isFinite(sm) || !Number.isFinite(hm)) {
     return res.status(400).json({ error: "invalid_body" });
+  }
+  if (sm < 0 || hm < 0 || sm > 100000 || hm > 100000) {
+    return res.status(400).json({ error: "quota_out_of_range" });
   }
   await ensureQuotaConfig(id);
   await run(
     `UPDATE quota_config SET standard_monthly = $1, hires_monthly = $2 WHERE user_id = $3 AND active = TRUE`,
-    [Number(standard_monthly), Number(hires_monthly), id]
+    [sm, hm, id]
   );
   res.json({ ok: true });
 });

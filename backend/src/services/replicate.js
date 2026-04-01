@@ -15,7 +15,7 @@ export const MODELS = {
   edit: "black-forest-labs/flux-kontext-dev",
 };
 
-const STYLE_PREFIXES = {
+export const STYLE_PREFIXES = {
   none: "",
   photorealistic: "photorealistic, highly detailed photograph, natural lighting, ",
   cinematic: "cinematic still, dramatic lighting, film grain, shallow depth of field, ",
@@ -47,7 +47,6 @@ export function buildFluxInput(modelKey, body) {
     output_format: "webp",
     output_quality: 90,
     num_outputs: 1,
-    disable_safety_checker: true,
   };
 
   if (negative_prompt) {

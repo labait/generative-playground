@@ -21,7 +21,7 @@ router.post(
   async (req, res) => {
     try {
       const { jobId } = req.body || {};
-      if (!jobId || typeof jobId !== "string") {
+      if (!jobId || typeof jobId !== "string" || !/^[a-z0-9][a-z0-9_-]{0,80}$/.test(jobId)) {
         return res.status(400).json({ error: "job_id_required" });
       }
 

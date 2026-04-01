@@ -41,6 +41,10 @@ router.post(
       }
 
       const aspectRatio = req.body?.aspect_ratio || "1:1";
+      const validAspects = ["1:1", "16:9", "9:16", "21:9", "9:21", "4:3", "3:4", "4:5", "5:4", "3:2", "2:3"];
+      if (!validAspects.includes(aspectRatio)) {
+        return res.status(400).json({ error: "invalid_aspect_ratio" });
+      }
       const imageBlob = new Blob([req.file.buffer], { type: req.file.mimetype });
 
       const prediction = await createEditPrediction(imageBlob, prompt, aspectRatio);
