@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { Router } from "express";
 import { ConfidentialClientApplication } from "@azure/msal-node";
 import { getOne, run } from "../db/client.js";
@@ -49,10 +50,14 @@ router.get("/login", async (req, res) => {
   }
   try {
     const redirectUri = getRedirectUri();
+    const state = crypto.randomBytes(16).toString("hex");
+    req.session.oauthState = state;
+    await new Promise((resolve, reject) => req.session.save((err) => err ? reject(err) : resolve()));
     const authCodeUrl = await cca.getAuthCodeUrl({
       scopes: SCOPES,
       redirectUri,
       prompt: "select_account",
+      state,
     });
     res.redirect(authCodeUrl);
   } catch (e) {
@@ -73,6 +78,11 @@ router.get("/callback", async (req, res) => {
   }
   if (!code) {
     return res.status(400).send("Missing authorization code.");
+  }
+  const expectedState = req.session.oauthState;
+  delete req.session.oauthState;
+  if (!expectedState || req.query.state !== expectedState) {
+    return res.status(400).send("Invalid OAuth state.");
   }
   try {
     const redirectUri = getRedirectUri();
@@ -125,14 +135,19 @@ router.get("/callback", async (req, res) => {
       }
     }
 
-    req.session.userId = user.id;
-    req.session.email = user.email;
-    req.session.displayName = user.display_name;
-    req.session.role = user.role;
-    req.session.microsoftId = user.microsoft_id;
-
+    const sessionData = {
+      userId: user.id,
+      email: user.email,
+      displayName: user.display_name,
+      role: user.role,
+      microsoftId: user.microsoft_id,
+    };
     const front = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
-    res.redirect(`${front}/`);
+    req.session.regenerate((err) => {
+      if (err) return res.status(500).send("Session error.");
+      Object.assign(req.session, sessionData);
+      req.session.save(() => res.redirect(`${front}/`));
+    });
   } catch (e) {
     console.error(e);
     res.status(500).send("OAuth callback failed.");

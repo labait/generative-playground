@@ -40,6 +40,19 @@ router.post(
         return res.status(400).json({ error: "invalid_style" });
       }
 
+      if (guidance != null) {
+        const g = Number(guidance);
+        if (!Number.isFinite(g) || g < 0 || g > 50) {
+          return res.status(400).json({ error: "invalid_guidance" });
+        }
+      }
+      if (seed != null) {
+        const s = Number(seed);
+        if (!Number.isFinite(s) || s < 0 || s > 4294967295) {
+          return res.status(400).json({ error: "invalid_seed" });
+        }
+      }
+
       const prompt = sanitizePrompt(rawPrompt);
       if (!prompt) {
         return res.status(400).json({ error: "prompt_invalid" });

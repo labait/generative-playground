@@ -62,6 +62,7 @@ export async function initSchema() {
 
     CREATE INDEX IF NOT EXISTS idx_usage_log_user ON usage_log(user_id);
     CREATE INDEX IF NOT EXISTS idx_usage_log_job ON usage_log(job_id);
+    CREATE INDEX IF NOT EXISTS idx_usage_log_media_token ON usage_log(media_access_token);
 
     CREATE TABLE IF NOT EXISTS quota_usage (
       id SERIAL PRIMARY KEY,
